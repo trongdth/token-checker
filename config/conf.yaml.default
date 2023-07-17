@@ -1,0 +1,16 @@
+env: localhost
+port: 6009
+
+# mongo
+mongo_db_url: mongodb://localhost:27017,localhost:27018,localhost:27019
+mongo_db_name: tokoin
+
+# rabbit
+rabbit_mq: amqp://guest:guest@localhost:5672
+
+# paysgift
+paysgift_client_id: 34221
+paysgift_client_key: xxx
+paysgift_base_url: https://api.paysgift.co.id
+
+rollbar_token: 
