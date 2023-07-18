@@ -65,9 +65,7 @@ func (d *Database) EnsureIndexes() {
 	colls := indexes.GetCollections()
 	for _, coll := range colls.Collections {
 
-		var (
-			dropIndexs = []string{}
-		)
+		var dropIndexs = []string{}
 
 		c := d.dbInstance.Collection(coll.Name)
 		duration := 10 * time.Second

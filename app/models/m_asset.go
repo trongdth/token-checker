@@ -1,5 +1,9 @@
 package models
 
+import (
+	"time"
+)
+
 type TwTAsset struct {
 	Model       `json:",inline" bson:",inline"`
 	Name        string         `json:"name" bson:"name"`
@@ -10,6 +14,16 @@ type TwTAsset struct {
 	Description string         `json:"description" bson:"description"`
 	Explorer    string         `json:"explorer" bson:"explorer"`
 	Status      string         `json:"status" bson:"status"`
-	ID          string         `json:"id" bson:"id"`
 	Blockchain  *TwTBlockchain `json:"blockchain" bson:"blockchain"`
+}
+
+// BeforeCreate : handle before create
+func (m *TwTAsset) BeforeCreate() {
+	if m.CreatedAt == 0 {
+		m.CreatedAt = uint64(time.Now().UnixMilli())
+	}
+
+	if m.UpdatedAt == 0 {
+		m.UpdatedAt = uint64(time.Now().UnixMilli())
+	}
 }
