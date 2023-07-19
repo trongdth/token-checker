@@ -2,10 +2,7 @@ package services
 
 import (
 	"encoding/json"
-	"log"
 	"os"
-	"path/filepath"
-	"sync"
 
 	"github.com/trongdth/token-checker/m/v2/app/interfaces"
 	"github.com/trongdth/token-checker/m/v2/app/models"
@@ -16,6 +13,7 @@ import (
 type ScanService struct {
 	blockchainRepos interfaces.IBlockchainRepository
 	assetRepos      interfaces.IAssetRepository
+	mapBlockchain   map[string]models.TwTBlockchain
 }
 
 // NewScanService : create new instance ScanService
@@ -23,49 +21,30 @@ func NewScanService(blockchainRepos interfaces.IBlockchainRepository, assetRepos
 	return &ScanService{
 		blockchainRepos: blockchainRepos,
 		assetRepos:      assetRepos,
+		mapBlockchain:   map[string]models.TwTBlockchain{},
 	}
 }
 
 func (sSvc *ScanService) ScanData() error {
 	var (
-		wg       sync.WaitGroup
 		arrPaths []string
+		err      error
 	)
 
-	err := filepath.Walk("./assets/blockchains",
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if !info.IsDir() && info.Name() == "info.json" {
-				arrPaths = append(arrPaths, path)
-			}
-
-			return nil
-		})
-	if err != nil {
+	if arrPaths, err = sSvc.getArrayPath(); err != nil {
 		return err
 	}
 
-	wg.Add(len(arrPaths))
 	for i := 0; i < len(arrPaths); i++ {
-		go func(path string) {
-			if err := sSvc.parseData(path); err != nil {
-				// TODO
-			}
-			wg.Done()
-		}(arrPaths[i])
-
+		if err = sSvc.parseData(arrPaths[i]); err != nil {
+			return err
+		}
 	}
-	wg.Wait()
 
 	return nil
 }
 
 func (sSvc *ScanService) parseData(path string) error {
-
-	log.Println(path)
 	var data map[string]interface{}
 
 	contents, err := os.ReadFile(path)
@@ -77,14 +56,20 @@ func (sSvc *ScanService) parseData(path string) error {
 		return err
 	}
 
+	name := sSvc.getBlockchainIdentityFromPath(path)
 	if data["type"] == "coin" {
-		if err := sSvc.parseBlockchainData(data); err != nil {
-			log.Println(err)
+		blockchain, err := sSvc.parseBlockchainData(data)
+		if err != nil {
 			return err
 		}
+
+		if name != "" {
+			sSvc.mapBlockchain[name] = *blockchain
+		}
+
 	} else {
-		if err := sSvc.parseAssetData(data); err != nil {
-			log.Println(err)
+
+		if err := sSvc.parseAssetData(data, sSvc.mapBlockchain[name]); err != nil {
 			return err
 		}
 	}
@@ -92,17 +77,21 @@ func (sSvc *ScanService) parseData(path string) error {
 	return nil
 }
 
-func (sSvc *ScanService) parseBlockchainData(data map[string]interface{}) error {
+func (sSvc *ScanService) parseBlockchainData(data map[string]interface{}) (*models.TwTBlockchain, error) {
 	var blockchain *models.TwTBlockchain
 
 	if err := utils.Copy(&blockchain, data); err != nil {
-		return err
+		return nil, err
 	}
 
-	return sSvc.blockchainRepos.Save(blockchain)
+	if err := sSvc.blockchainRepos.Save(blockchain); err != nil {
+		return nil, err
+	}
+
+	return blockchain, nil
 }
 
-func (sSvc *ScanService) parseAssetData(data map[string]interface{}) error {
+func (sSvc *ScanService) parseAssetData(data map[string]interface{}, blockchain models.TwTBlockchain) error {
 
 	var asset *models.TwTAsset
 
@@ -110,5 +99,6 @@ func (sSvc *ScanService) parseAssetData(data map[string]interface{}) error {
 		return err
 	}
 
+	asset.Blockchain = &blockchain
 	return sSvc.assetRepos.Save(asset)
 }

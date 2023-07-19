@@ -36,3 +36,16 @@ func (aRepos *AssetRepository) Save(asset *models.TwTAsset) error {
 	_, err := aRepos.assetCollection.UpdateOne(ctx, filter, bson.M{"$set": asset}, opts)
 	return err
 }
+
+func (aRepos *AssetRepository) FindAsset(tokenAddr string) (*models.TwTAsset, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), ContextTimeOut)
+	defer cancel()
+
+	var asset *models.TwTAsset
+
+	if err := aRepos.assetCollection.FindOne(ctx, bson.M{"id": tokenAddr}).Decode(&asset); err != nil {
+		return nil, err
+	}
+
+	return asset, nil
+}

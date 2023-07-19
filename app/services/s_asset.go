@@ -2,6 +2,7 @@ package services
 
 import (
 	"github.com/trongdth/token-checker/m/v2/app/interfaces"
+	"github.com/trongdth/token-checker/m/v2/app/models"
 )
 
 // AssetService struct
@@ -16,6 +17,6 @@ func NewAssetService(assetRepos interfaces.IAssetRepository) interfaces.IAssetSe
 	}
 }
 
-func (aSvc *AssetService) VerifyToken(tokenAddr string) {
-
+func (aSvc *AssetService) VerifyToken(tokenAddr string) (*models.TwTAsset, error) {
+	return aSvc.assetRepos.FindAsset(tokenAddr)
 }

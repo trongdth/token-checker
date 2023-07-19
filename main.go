@@ -9,6 +9,7 @@ import (
 	"github.com/akamensky/argparse"
 	"github.com/trongdth/token-checker/m/v2/app"
 	"github.com/trongdth/token-checker/m/v2/app/interfaces"
+	"github.com/trongdth/token-checker/m/v2/app/models"
 	"go.uber.org/zap"
 )
 
@@ -50,10 +51,17 @@ func main() {
 
 		if syncCmd.Happened() {
 			return scanSvc.ScanData()
+
 		} else if checkCmd.Happened() {
 
 			if *tokenAddr != "" {
-				log.Println("token =", *tokenAddr)
+				var asset *models.TwTAsset
+
+				if asset, err = assetSvc.VerifyToken(*tokenAddr); err != nil {
+					return err
+				}
+
+				zap.L().Info("FOUND", zap.Any("TOKEN:", asset))
 			}
 
 		} else {
@@ -64,6 +72,6 @@ func main() {
 	})
 
 	if err != nil {
-		zap.Error(err)
+		zap.L().Error("error: ", zap.Error(err))
 	}
 }
