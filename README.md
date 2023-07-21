@@ -23,11 +23,17 @@ This repos helps to verify the token address is valid or not.
     ```shell
         nano config/conf.yaml
     ```
+- Update submodule
+    ```shell
+        git submodule update --remote --merge
+    ```
 #### 2. Sync data:
 - Run application with `sync` command
     ```shell
         go run main.go sync
     ```
+    Notes: 
+    - Update submodule whenever you want to sync a newest data from trust wallet source.
 #### 3. Verify token address:
 - Run application with `check` command
     ```shell
