@@ -7,13 +7,14 @@ import (
 	"github.com/trongdth/token-checker/m/v2/app/interfaces"
 	"github.com/trongdth/token-checker/m/v2/app/models"
 	"github.com/trongdth/token-checker/m/v2/pkg/utils"
+	"go.uber.org/zap"
 )
 
 // ScanService struct
 type ScanService struct {
 	blockchainRepos interfaces.IBlockchainRepository
 	assetRepos      interfaces.IAssetRepository
-	mapBlockchain   map[string]models.TwTBlockchain
+	mapBlockchain   map[string]*models.TwTBlockchain
 }
 
 // NewScanService : create new instance ScanService
@@ -21,22 +22,30 @@ func NewScanService(blockchainRepos interfaces.IBlockchainRepository, assetRepos
 	return &ScanService{
 		blockchainRepos: blockchainRepos,
 		assetRepos:      assetRepos,
-		mapBlockchain:   map[string]models.TwTBlockchain{},
+		mapBlockchain:   map[string]*models.TwTBlockchain{},
 	}
 }
 
 func (sSvc *ScanService) ScanData() error {
 	var (
-		arrPaths []string
-		err      error
+		arrBlockchainPaths []string
+		arrAssetPaths      []string
+		err                error
 	)
 
-	if arrPaths, err = sSvc.getArrayPath(); err != nil {
+	if arrBlockchainPaths, arrAssetPaths, err = sSvc.getArrayPath(); err != nil {
 		return err
 	}
 
-	for i := 0; i < len(arrPaths); i++ {
-		if err = sSvc.parseData(arrPaths[i]); err != nil {
+	// make sure we store blockchain data before inserting asset data
+	for i := 0; i < len(arrBlockchainPaths); i++ {
+		if err = sSvc.parseData(arrBlockchainPaths[i]); err != nil {
+			return err
+		}
+	}
+
+	for i := 0; i < len(arrAssetPaths); i++ {
+		if err = sSvc.parseData(arrAssetPaths[i]); err != nil {
 			return err
 		}
 	}
@@ -64,7 +73,7 @@ func (sSvc *ScanService) parseData(path string) error {
 		}
 
 		if name != "" {
-			sSvc.mapBlockchain[name] = *blockchain
+			sSvc.mapBlockchain[name] = blockchain
 		}
 
 	} else {
@@ -88,10 +97,12 @@ func (sSvc *ScanService) parseBlockchainData(data map[string]interface{}) (*mode
 		return nil, err
 	}
 
+	zap.L().Info("==> STORE BLOCKCHAIN: ", zap.Any(blockchain.Name, blockchain))
+
 	return blockchain, nil
 }
 
-func (sSvc *ScanService) parseAssetData(data map[string]interface{}, blockchain models.TwTBlockchain) error {
+func (sSvc *ScanService) parseAssetData(data map[string]interface{}, blockchain *models.TwTBlockchain) error {
 
 	var asset *models.TwTAsset
 
@@ -99,6 +110,8 @@ func (sSvc *ScanService) parseAssetData(data map[string]interface{}, blockchain 
 		return err
 	}
 
-	asset.Blockchain = &blockchain
+	asset.Blockchain = blockchain
+
+	zap.L().Info("=====> STORE ASSET: ", zap.Any(asset.Symbol, asset))
 	return sSvc.assetRepos.Save(asset)
 }
