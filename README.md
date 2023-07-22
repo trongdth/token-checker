@@ -42,6 +42,10 @@ This repos helps to verify the token address is valid or not.
     Notes: 
     - To see data from `check` command, you need to run `sync` before.
 
+### What's next
+
+- [ ] Run `sync` command in parallel.
+- [ ] Add more trusted sources.
 ### Created & Maintained By
 
 [Trong Dinh](https://github.com/trongdth) ([@trongdth](https://www.twitter.com/trongdth))
